@@ -8,7 +8,6 @@ import pypandoc
 
 
 def pdf_to_docx(uploaded_file, **kwargs):
-    """Converts a PDF file to a DOCX file, ensuring temporary files are cleaned up."""
     with tempfile.TemporaryDirectory() as temp_dir:
         input_path = os.path.join(temp_dir, uploaded_file.name)
         with open(input_path, "wb") as f:
@@ -26,9 +25,7 @@ def pdf_to_docx(uploaded_file, **kwargs):
 
 
 def image_convert(uploaded_file, output_format, **kwargs):
-    """Converts an image to a different image format in-memory."""
     with Image.open(uploaded_file) as img:
-        # Handle images with transparency for formats that don't support it (like JPEG)
         if output_format.lower() in ['jpg', 'jpeg'] and img.mode == 'RGBA':
             img = img.convert('RGB')
 
@@ -45,7 +42,6 @@ def image_convert(uploaded_file, output_format, **kwargs):
 
 
 def docx_to_pdf(uploaded_file, **kwargs):
-    """Converts a DOCX file to a PDF file using pandoc, ensuring temp files are cleaned up."""
     # Requires pandoc to be installed on the system
     with tempfile.TemporaryDirectory() as temp_dir:
         input_path = os.path.join(temp_dir, uploaded_file.name)

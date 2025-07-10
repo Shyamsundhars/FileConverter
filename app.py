@@ -1,7 +1,7 @@
 import streamlit as st
 from conversion import pdf_to_docx, image_convert, docx_to_pdf #, audio_convert
 
-st.title("Free Universal File Converter")
+st.title("File Converter")
 
 # Configuration dictionary to make the app more scalable and less repetitive
 CONVERSION_CONFIG = {
@@ -22,6 +22,7 @@ CONVERSION_CONFIG = {
         "file_types": ["docx"],
         "conversion_func": docx_to_pdf,
     },
+    #Future Audio Component:
     # "Audio to Audio": {
     #     "uploader_label": "Upload Audio",
     #     "file_types": ["mp3", "wav", "ogg", "flac"],
@@ -33,7 +34,6 @@ CONVERSION_CONFIG = {
 
 conversion_choice = st.selectbox("Choose conversion", list(CONVERSION_CONFIG.keys()))
 
-# Get the configuration for the selected conversion
 config = CONVERSION_CONFIG[conversion_choice]
 
 uploaded_file = st.file_uploader(label=config["uploader_label"], type=config["file_types"])
@@ -45,5 +45,11 @@ if "extra_ui" in config:
 
 if uploaded_file and st.button(f"Convert to {conversion_choice.split(' to ')[-1]}"):
     with st.spinner("Converting..."):
-        output, filename = config["conversion_func"](uploaded_file, **extra_args)
-        st.download_button("Download Converted File", output, file_name=filename)
+        try:
+            output, filename = config["conversion_func"](uploaded_file, **extra_args)
+            st.download_button("Download Converted File", output, file_name=filename)
+        except Exception as e:
+            st.error(f"An error occurred during conversion.")
+            st.error("This can happen with corrupted, encrypted, or unusually complex files. Please try a different file.")
+            # For debugging, you can uncomment the line below to see the full error in the app
+            # st.exception(e)
