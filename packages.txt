@@ -3,4 +3,4 @@ texlive-base
 texlive-xetex
 texlive-fonts-recommended
 texlive-latex-extra
-lmodern
+fonts-noto-core

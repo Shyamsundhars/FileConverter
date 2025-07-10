@@ -47,7 +47,11 @@ if uploaded_file and st.button(f"Convert to {conversion_choice.split(' to ')[-1]
     with st.spinner("Converting..."):
         try:
             output, filename = config["conversion_func"](uploaded_file, **extra_args)
-            st.download_button("Download Converted File", output, file_name=filename)
+            if not output:
+                st.error("Conversion failed and produced an empty file.")
+                st.info("This can be due to missing fonts for characters in your document. Please check the application logs for warnings.")
+            else:
+                st.download_button("Download Converted File", output, file_name=filename)
         except Exception as e:
             st.error("An error occurred during conversion.")
             st.error(f"Details: {e}")

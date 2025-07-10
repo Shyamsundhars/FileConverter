@@ -50,7 +50,8 @@ def docx_to_pdf(uploaded_file, **kwargs):
 
         output_path = os.path.join(temp_dir, "converted.pdf")
         pypandoc.convert_file(input_path, 'pdf', outputfile=output_path,
-                              extra_args=['--pdf-engine=xelatex'])
+                              extra_args=['--pdf-engine=xelatex',
+                                          '-V', 'mainfont=Noto Serif'])
 
         with open(output_path, "rb") as f:
             pdf_data = f.read()
