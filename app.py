@@ -44,10 +44,10 @@ config = CONVERSION_CONFIG[conversion_choice]
 
 uploaded_file = st.file_uploader(label=config["uploader_label"], type=config["file_types"])
 
+# Handle optional UI elements for conversions like Image to Image
 extra_args = {}
-if "extra_ui" in config:
-    extra_arg_value = config["extra_ui"]()
-    extra_args[config["extra_arg_name"]] = extra_arg_value
+if extra_ui_func := config.get("extra_ui"):
+    extra_args[config["extra_arg_name"]] = extra_ui_func()
 
 if uploaded_file and st.button(f"Convert to {config['output_name']}"):
     with st.spinner("Converting..."):
