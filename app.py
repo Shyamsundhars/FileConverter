@@ -55,5 +55,5 @@ if uploaded_file and st.button(f"Convert to {conversion_choice.split(' to ')[-1]
         except Exception as e:
             st.error("An error occurred during conversion.")
             st.error(f"Details: {e}")
-            st.info("This can happen with corrupted, encrypted, or unusually complex files. For DOCX to PDF conversion, it might also indicate a missing LaTeX installation on the server.")
+            st.info("This can happen with corrupted, encrypted, or unusually complex files (e.g., complex tables).")
             st.exception(e)

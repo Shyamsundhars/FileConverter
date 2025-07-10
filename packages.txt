@@ -1,6 +1,2 @@
 pandoc
-texlive-base
-texlive-xetex
-texlive-fonts-recommended
-texlive-latex-extra
-fonts-noto-core
+wkhtmltopdf
