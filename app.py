@@ -49,6 +49,7 @@ if uploaded_file and st.button(f"Convert to {conversion_choice.split(' to ')[-1]
             output, filename = config["conversion_func"](uploaded_file, **extra_args)
             st.download_button("Download Converted File", output, file_name=filename)
         except Exception as e:
-            st.error(f"An error occurred during conversion.")
-            st.error("This can happen with corrupted, encrypted, or unusually complex files. Please try a different file.")
+            st.error("An error occurred during conversion.")
+            st.error(f"Details: {e}")
+            st.info("This can happen with corrupted, encrypted, or unusually complex files. For DOCX to PDF conversion, it might also indicate a missing LaTeX installation on the server.")
             st.exception(e)
