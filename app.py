@@ -51,5 +51,4 @@ if uploaded_file and st.button(f"Convert to {conversion_choice.split(' to ')[-1]
         except Exception as e:
             st.error(f"An error occurred during conversion.")
             st.error("This can happen with corrupted, encrypted, or unusually complex files. Please try a different file.")
-            # For debugging, you can uncomment the line below to see the full error in the app
-            # st.exception(e)
+            st.exception(e)
