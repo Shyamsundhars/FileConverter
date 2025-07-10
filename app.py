@@ -12,6 +12,7 @@ CONVERSION_CONFIG = {
         "uploader_label": "Upload PDF",
         "file_types": ["pdf"],
         "conversion_func": pdf_to_docx,
+        "output_name": "DOCX",
     },
     "Image to Image": {
         "uploader_label": "Upload Image",
@@ -19,11 +20,13 @@ CONVERSION_CONFIG = {
         "conversion_func": image_convert,
         "extra_ui": lambda: st.selectbox("Output format", ["png", "jpg", "bmp", "tiff", "gif"]),
         "extra_arg_name": "output_format",
+        "output_name": "Image",
     },
     "DOCX to PDF": {
         "uploader_label": "Upload DOCX",
         "file_types": ["docx"],
         "conversion_func": docx_to_pdf,
+        "output_name": "PDF",
     },
     #Future Audio Component:
     # "Audio to Audio": {
@@ -46,7 +49,7 @@ if "extra_ui" in config:
     extra_arg_value = config["extra_ui"]()
     extra_args[config["extra_arg_name"]] = extra_arg_value
 
-if uploaded_file and st.button(f"Convert to {conversion_choice.split(' to ')[-1]}"):
+if uploaded_file and st.button(f"Convert to {config['output_name']}"):
     with st.spinner("Converting..."):
         try:
             output, filename = config["conversion_func"](uploaded_file, **extra_args)
