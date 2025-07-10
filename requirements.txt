@@ -2,4 +2,5 @@ streamlit
 pdf2docx
 pypandoc
 Pillow
+weasyprint
 # pydub

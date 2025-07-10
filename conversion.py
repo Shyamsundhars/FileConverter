@@ -56,9 +56,7 @@ def docx_to_pdf(uploaded_file, **kwargs):
     def logic(input_path, temp_dir):
         output_path = os.path.join(temp_dir, "converted.pdf")
         pypandoc.convert_file(input_path, 'pdf', outputfile=output_path,
-                              extra_args=['--pdf-engine=wkhtmltopdf', # Use the wkhtmltopdf engine
-                                          # Embed all assets to avoid local file access issues
-                                          '--self-contained'])
+                              extra_args=['--pdf-engine=weasyprint'])
         return output_path
 
     return _convert_with_temp_file(uploaded_file, logic)
