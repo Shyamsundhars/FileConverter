@@ -1,5 +1,8 @@
+import os
 import streamlit as st
 from conversion import pdf_to_docx, image_convert, docx_to_pdf #, audio_convert
+
+os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/runtime-appuser")
 
 st.title("File Converter")
 
