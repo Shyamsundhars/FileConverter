@@ -3,7 +3,7 @@ import io
 import tempfile
 from pdf2docx import Converter
 from PIL import Image
-import pypandoc
+import docx2pdf
 # from pydub import AudioSegment
 
 def _convert_with_temp_file(uploaded_file, conversion_logic):
@@ -52,10 +52,8 @@ def image_convert(uploaded_file, output_format, **kwargs):
 def docx_to_pdf(uploaded_file, **kwargs):
     def logic(input_path, temp_dir):
         output_path = os.path.join(temp_dir, "converted.pdf")
-        pypandoc.convert_file(input_path, 'pdf', outputfile=output_path,
-                              extra_args=['--pdf-engine=weasyprint',
-                                          # Embed all assets to avoid file path issues
-                                          '--self-contained'])
+        # Use the robust docx2pdf library which leverages LibreOffice
+        docx2pdf.convert(input_path, output_path)
         return output_path
 
     return _convert_with_temp_file(uploaded_file, logic)

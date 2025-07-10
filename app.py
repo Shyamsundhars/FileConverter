@@ -13,6 +13,7 @@ CONVERSION_CONFIG = {
         "file_types": ["pdf"],
         "conversion_func": pdf_to_docx,
         "output_name": "DOCX",
+        "failure_tip": "This can happen with scanned (image-based) PDFs or very complex layouts.",
     },
     "Image to Image": {
         "uploader_label": "Upload Image",
@@ -27,6 +28,7 @@ CONVERSION_CONFIG = {
         "file_types": ["docx"],
         "conversion_func": docx_to_pdf,
         "output_name": "PDF",
+        "failure_tip": "This can happen with corrupted, encrypted, or password-protected files.",
     },
     #Future Audio Component:
     # "Audio to Audio": {
@@ -55,7 +57,9 @@ if uploaded_file and st.button(f"Convert to {config['output_name']}"):
             output, filename = config["conversion_func"](uploaded_file, **extra_args)
             if not output:
                 st.error("Conversion failed and produced an empty file.")
-                st.info("This can be due to missing fonts for characters in your document. Please check the application logs for warnings.")
+                # Provide a context-specific tip from the config
+                if tip := config.get("failure_tip"):
+                    st.info(tip)
             else:
                 st.download_button("Download Converted File", output, file_name=filename)
         except Exception as e:
