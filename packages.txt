@@ -1,2 +1,5 @@
 pandoc
+texlive-base
 texlive-xetex
+texlive-fonts-recommended
+lmodern
