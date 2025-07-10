@@ -40,10 +40,8 @@ def image_convert(uploaded_file, output_format, **kwargs):
         if output_format.lower() in ['jpg', 'jpeg'] and img.mode == 'RGBA':
             img = img.convert('RGB')
 
-        # Pillow expects 'JPEG' for .jpg files.
-        save_format = output_format.upper()
-        if save_format == 'JPG':
-            save_format = 'JPEG'
+        # Pillow expects 'JPEG' for .jpg files, so we normalize the format name.
+        save_format = 'JPEG' if output_format.lower() == 'jpg' else output_format.upper()
 
         output_buffer = io.BytesIO()
         img.save(output_buffer, format=save_format)
