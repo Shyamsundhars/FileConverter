@@ -27,9 +27,8 @@ def _convert_with_temp_file(uploaded_file, conversion_logic):
 def pdf_to_docx(uploaded_file, **kwargs):
     def logic(input_path, temp_dir):
         output_path = os.path.join(temp_dir, "converted.docx")
-        cv = Converter(input_path)
-        cv.convert(output_path)
-        cv.close()
+        with Converter(input_path) as cv:
+            cv.convert(output_path)
         return output_path
 
     return _convert_with_temp_file(uploaded_file, logic)
