@@ -1,9 +1,9 @@
 import os
 import io
+import subprocess
 import tempfile
 from pdf2docx import Converter
 from PIL import Image
-import docx2pdf
 # from pydub import AudioSegment
 
 def _convert_with_temp_file(uploaded_file, conversion_logic):
@@ -50,11 +50,56 @@ def image_convert(uploaded_file, output_format, **kwargs):
 
 
 def docx_to_pdf(uploaded_file, **kwargs):
+    """Converts a DOCX file to PDF using LibreOffice in headless mode."""
     def logic(input_path, temp_dir):
-        output_path = os.path.join(temp_dir, "converted.pdf")
-        # Use the robust docx2pdf library which leverages LibreOffice
-        docx2pdf.convert(input_path, output_path)
-        return output_path
+        # LibreOffice will create a PDF with the same name as the input file
+        # in the specified output directory.
+        # e.g., /tmp/xyz/document.docx -> /tmp/xyz/document.pdf
+        
+        # We must set a HOME env var for LibreOffice in headless mode to prevent
+        # it from trying to write to the real home directory, which may not be
+        # writable in a containerized environment.
+        env = os.environ.copy()
+        env["HOME"] = temp_dir
+
+        command = [
+            "libreoffice",
+            "--headless",
+            "--convert-to",
+            "pdf",
+            "--outdir",
+            temp_dir,
+            input_path,
+        ]
+
+        try:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+                timeout=90,  # Generous timeout for large or complex files
+                env=env,
+            )
+        except FileNotFoundError:
+            raise RuntimeError(
+                "LibreOffice not found. Ensure 'libreoffice' is in your packages.txt."
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            stderr = e.stderr.decode("utf-8", "ignore") if hasattr(e, 'stderr') else "Timeout expired."
+            raise RuntimeError(f"LibreOffice conversion failed. Error: {stderr}")
+
+        # The output file will have the same name as the input, but with a .pdf extension.
+        pdf_filename = os.path.splitext(os.path.basename(input_path))[0] + ".pdf"
+        generated_pdf_path = os.path.join(temp_dir, pdf_filename)
+
+        if not os.path.exists(generated_pdf_path):
+            stderr_info = result.stderr.decode("utf-8", "ignore")
+            raise FileNotFoundError(
+                f"LibreOffice did not produce a PDF file. STDERR: {stderr_info}"
+            )
+        
+        return generated_pdf_path
 
     return _convert_with_temp_file(uploaded_file, logic)
 

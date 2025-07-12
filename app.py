@@ -28,7 +28,7 @@ CONVERSION_CONFIG = {
         "file_types": ["docx"],
         "conversion_func": docx_to_pdf,
         "output_name": "PDF",
-        "failure_tip": "This can happen with corrupted, encrypted, or password-protected files.",
+        "failure_tip": "Conversion can fail for very large, corrupted, or password-protected documents.",
     },
     #Future Audio Component:
     # "Audio to Audio": {
