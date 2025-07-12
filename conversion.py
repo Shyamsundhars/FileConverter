@@ -59,9 +59,12 @@ def docx_to_pdf(uploaded_file, **kwargs):
         # and custom fonts, which is key to solving the symbol issue.
         extra_args = [
             '--pdf-engine=xelatex',
-            '-V', 'geometry:margin=1in',
+            '-V', 'geometry:margin=1in',      # Set 1-inch margins
+            # Use a single, robust font for all text types to ensure
+            # maximum character compatibility and prevent font lookup errors.
             '-V', 'mainfont="Noto Sans"',
-            '-V', 'monofont="Noto Mono"',
+            '-V', 'sansfont="Noto Sans"',
+            '-V', 'monofont="Noto Sans"',
         ]
 
         # By setting the working directory to temp_dir, pandoc will correctly

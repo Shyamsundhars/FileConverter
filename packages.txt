@@ -6,3 +6,4 @@ lmodern
 texlive-xetex
 texlive-latex-extra
 fonts-noto-unhinted
+texlive-luatex
