@@ -8,5 +8,10 @@ texlive-latex-extra
 fonts-noto-unhinted
 texlive-luatex
 fontconfig
-fonts-noto-devanagari
-fonts-noto-tamil
+fonts-noto-core
+fonts-noto-ui-core
+fonts-noto-extra
+fonts-noto-ui-extra
+fonts-deva
+fonts-taml
+
