@@ -1,6 +1,8 @@
 import os
 import io
+import subprocess
 import tempfile
+from pdf2docx import Converter
 from PIL import Image
 import pypandoc
 # from pydub import AudioSegment
@@ -22,6 +24,15 @@ def _convert_with_temp_file(uploaded_file, conversion_logic):
 
     output_filename = os.path.basename(output_path)
     return output_data, output_filename
+
+def pdf_to_docx(uploaded_file, **kwargs):
+    def logic(input_path, temp_dir):
+        output_path = os.path.join(temp_dir, "converted.docx")
+        with Converter(input_path) as cv:
+            cv.convert(output_path)
+        return output_path
+
+    return _convert_with_temp_file(uploaded_file, logic)
 
 
 def image_convert(uploaded_file, output_format, **kwargs):
@@ -102,7 +113,7 @@ def docx_to_pdf(uploaded_file, **kwargs):
             if "lualatex not found" in error_message:
                 raise RuntimeError(
                     "The 'lualatex' PDF engine was not found. "
-                    "Ensure 'texlive-luatex' is in packages.txt. "
+                    "Ensure 'texlive-lualatex' is in packages.txt. "
                     f"Original error: {error_message}"
                 )
             raise e
