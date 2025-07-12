@@ -55,35 +55,39 @@ def docx_to_pdf(uploaded_file, **kwargs):
     def logic(input_path, temp_dir):
         output_path = os.path.join(temp_dir, "converted.pdf")
 
-        # Pandoc extracts media to a 'media' subdirectory. To ensure it finds
-        # these images, we explicitly set the --resource-path to the temp
-        # directory where the DOCX is located.
         # Using --pdf-engine=xelatex provides much better support for Unicode
         # and custom fonts, which is key to solving the symbol issue.
         extra_args = [
             '--pdf-engine=xelatex',
-            f'--resource-path={temp_dir}'
         ]
 
+        # By setting the working directory to temp_dir, pandoc will correctly
+        # find any media (like images) that it extracts from the .docx file,
+        # as it places them in a 'media' subdirectory within the CWD.
         try:
             pypandoc.convert_file(
                 source_file=input_path,
                 to='pdf',
                 outputfile=output_path,
-                extra_args=extra_args
+                extra_args=extra_args,
+                cworkdir=temp_dir
             )
         except OSError as e:
             raise RuntimeError(
                 "Pandoc/xelatex conversion failed. Ensure 'pandoc' and 'texlive-*' "
-                "packages are in packages.txt."
+                "packages are in packages.txt, especially 'texlive-xetex'."
             ) from e
         except RuntimeError as e:
             # pypandoc raises RuntimeError on pandoc errors
             error_message = str(e)
-            if "Error producing PDF" in error_message:
+            if (
+                "Error producing PDF" in error_message
+                or "xelatex not found" in error_message
+            ):
                 raise RuntimeError(
-                    "Pandoc failed to create PDF. This often happens with complex formatting, "
-                    f"missing LaTeX packages, or unsupported fonts. Original error: {error_message}"
+                    "Pandoc failed to create PDF. This can happen with complex formatting "
+                    "or if the 'texlive-xetex' package is missing. "
+                    f"Original error: {error_message}"
                 )
             raise e
         return output_path
