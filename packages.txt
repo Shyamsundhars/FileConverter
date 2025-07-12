@@ -2,3 +2,6 @@ libreoffice
 fonts-liberation
 fonts-crosextra-carlito
 fonts-crosextra-caladea
+fonts-noto-core
+fonts-dejavu
+fonts-symbola
