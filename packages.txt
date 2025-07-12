@@ -4,10 +4,8 @@ texlive-latex-base
 texlive-latex-extra
 texlive-fonts-recommended
 fontconfig
-# Metrically-compatible fonts for MS Office documents
 fonts-liberation2
 fonts-crosextra-carlito
-# Unicode fonts for broad language support
 fonts-noto-unhinted
-fonts-noto-devanagari
-fonts-noto-tamil
+fonts-deva
+fonts-taml
