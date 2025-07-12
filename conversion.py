@@ -59,15 +59,10 @@ def docx_to_pdf(uploaded_file, **kwargs):
         # that often has better system font compatibility.
         extra_args = [
             '--pdf-engine=lualatex',
-            '-V', 'geometry:margin=1in',
-            # Set a main font, but also specify script-specific fonts for robustness.
-            # This directly addresses the missing character warnings.
-            '-V', 'mainfont="Noto Sans"',
-            '-V', 'sansfont="Noto Sans"',
-            '-V', 'monofont="Noto Mono"',
-            '-V', 'devanagarifont="Noto Sans Devanagari"',
-            '-V', 'tamilfont="Noto Sans Tamil"',
-            '-V', 'symbolfont="Noto Sans Symbols2"', # For symbols like '►'
+            '-V', 'geometry:margin=1in', # Set 1-inch margins
+            # By NOT specifying a 'mainfont', we allow lualatex to use fontconfig
+            # to find the best system-installed font to match the one in the DOCX.
+            # This is crucial for preserving formatting like boldness and alignment.
         ]
 
         # By setting the working directory to temp_dir, pandoc will correctly
