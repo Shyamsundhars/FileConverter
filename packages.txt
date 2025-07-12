@@ -1,7 +1,5 @@
-libreoffice
-fonts-liberation
-fonts-crosextra-carlito
-fonts-crosextra-caladea
-fonts-noto-core
-fonts-dejavu
-fonts-symbola
+pandoc
+texlive-latex-base
+texlive-fonts-recommended
+texlive-fonts-extra
+lmodern

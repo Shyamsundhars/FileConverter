@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 from pdf2docx import Converter
 from PIL import Image
+import pypandoc
 # from pydub import AudioSegment
 
 def _convert_with_temp_file(uploaded_file, conversion_logic):
@@ -50,56 +51,42 @@ def image_convert(uploaded_file, output_format, **kwargs):
 
 
 def docx_to_pdf(uploaded_file, **kwargs):
-    """Converts a DOCX file to PDF using LibreOffice in headless mode."""
+    """Converts a DOCX file to PDF using pandoc with the xelatex engine."""
     def logic(input_path, temp_dir):
-        # LibreOffice will create a PDF with the same name as the input file
-        # in the specified output directory.
-        # e.g., /tmp/xyz/document.docx -> /tmp/xyz/document.pdf
-        
-        # We must set a HOME env var for LibreOffice in headless mode to prevent
-        # it from trying to write to the real home directory, which may not be
-        # writable in a containerized environment.
-        env = os.environ.copy()
-        env["HOME"] = temp_dir
+        output_path = os.path.join(temp_dir, "converted.pdf")
 
-        command = [
-            "libreoffice",
-            "--headless",
-            "--convert-to",
-            "pdf",
-            "--outdir",
-            temp_dir,
-            input_path,
+        # Pandoc extracts media to a 'media' subdirectory. To ensure it finds
+        # these images, we explicitly set the --resource-path to the temp
+        # directory where the DOCX is located.
+        # Using --pdf-engine=xelatex provides much better support for Unicode
+        # and custom fonts, which is key to solving the symbol issue.
+        extra_args = [
+            '--pdf-engine=xelatex',
+            f'--resource-path={temp_dir}'
         ]
 
         try:
-            result = subprocess.run(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-                timeout=90,  # Generous timeout for large or complex files
-                env=env,
+            pypandoc.convert_file(
+                source_file=input_path,
+                to='pdf',
+                outputfile=output_path,
+                extra_args=extra_args
             )
-        except FileNotFoundError:
+        except OSError as e:
             raise RuntimeError(
-                "LibreOffice not found. Ensure 'libreoffice' is in your packages.txt."
-            )
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            stderr = e.stderr.decode("utf-8", "ignore") if hasattr(e, 'stderr') else "Timeout expired."
-            raise RuntimeError(f"LibreOffice conversion failed. Error: {stderr}")
-
-        # The output file will have the same name as the input, but with a .pdf extension.
-        pdf_filename = os.path.splitext(os.path.basename(input_path))[0] + ".pdf"
-        generated_pdf_path = os.path.join(temp_dir, pdf_filename)
-
-        if not os.path.exists(generated_pdf_path):
-            stderr_info = result.stderr.decode("utf-8", "ignore")
-            raise FileNotFoundError(
-                f"LibreOffice did not produce a PDF file. STDERR: {stderr_info}"
-            )
-        
-        return generated_pdf_path
+                "Pandoc/xelatex conversion failed. Ensure 'pandoc' and 'texlive-*' "
+                "packages are in packages.txt."
+            ) from e
+        except RuntimeError as e:
+            # pypandoc raises RuntimeError on pandoc errors
+            error_message = str(e)
+            if "Error producing PDF" in error_message:
+                raise RuntimeError(
+                    "Pandoc failed to create PDF. This often happens with complex formatting, "
+                    f"missing LaTeX packages, or unsupported fonts. Original error: {error_message}"
+                )
+            raise e
+        return output_path
 
     return _convert_with_temp_file(uploaded_file, logic)
 
