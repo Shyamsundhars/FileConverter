@@ -51,68 +51,52 @@ def image_convert(uploaded_file, output_format, **kwargs):
 
 def docx_to_pdf(uploaded_file, **kwargs):
     """
-    Converts a DOCX file to PDF using a two-step process for high fidelity:
-    1. Sanitize the DOCX with Pandoc to remove complex/problematic elements.
-    2. Convert the sanitized DOCX to PDF with LibreOffice to preserve layout.
+    Converts a DOCX file to PDF using LibreOffice for high-fidelity layout
+    and formatting preservation.
     """
     def logic(input_path, temp_dir):
-        # --- Step 1: Sanitize the DOCX with Pandoc ---
-        sanitized_docx_path = os.path.join(temp_dir, "sanitized.docx")
+        # LibreOffice will create a PDF with the same basename as the input file
+        # in the specified output directory.
+        # e.g., my_document.docx -> my_document.pdf
+        base_filename = os.path.basename(input_path)
+        pdf_filename = os.path.splitext(base_filename)[0] + '.pdf'
+        output_path = os.path.join(temp_dir, pdf_filename)
+
         try:
-            # Converting docx to docx with pandoc cleans up a lot of
-            # underlying XML, resolving issues with complex or corrupted files.
-            # This can fix artifacts and layout issues in the final PDF.
+            # Use LibreOffice (soffice) to perform a high-fidelity conversion that
+            # preserves complex layouts like multi-column pages. This is more
+            # reliable than pandoc for visual fidelity. The environment should
+            # have `ttf-mscorefonts-installer` in packages.txt to provide
+            # common Microsoft fonts, which prevents rendering artifacts.
             subprocess.run(
                 [
-                    'pandoc',
-                    input_path,
-                    '-o', sanitized_docx_path,
-                    '--wrap=none' # Helps preserve line breaks
+                    'soffice',  # Use 'soffice' for better stability in some environments
+                    '--headless',
+                    '--convert-to', 'pdf:writer_pdf_Export',
+                    '--outdir', temp_dir,
+                    input_path
                 ],
                 check=True,
                 capture_output=True,
                 text=True,
-                timeout=60
-            )
-        except FileNotFoundError:
-             raise RuntimeError(
-                "Pandoc command not found. Ensure 'pandoc' is in packages.txt."
-            )
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            error_details = e.stderr if hasattr(e, 'stderr') else str(e)
-            raise RuntimeError(
-                "Pandoc sanitization step failed. This can happen with highly complex or "
-                f"malformed DOCX files. Error: {error_details}"
-            )
-
-        # --- Step 2: Convert the sanitized DOCX to PDF with LibreOffice ---
-        # LibreOffice creates a PDF with the same name as the input file.
-        pdf_filename = "sanitized.pdf"
-        output_path = os.path.join(temp_dir, pdf_filename)
-
-        try:
-            # Use LibreOffice for a high-fidelity conversion that
-            # preserves complex layouts like multi-column pages.
-            subprocess.run(
-                [
-                    'libreoffice',
-                    '--headless',
-                    '--convert-to', 'pdf',
-                    '--outdir', temp_dir,
-                    sanitized_docx_path # Use the sanitized file
-                ],
-                check=True, capture_output=True, text=True,
                 timeout=120  # Add a timeout for large files
             )
         except FileNotFoundError:
-            raise RuntimeError("LibreOffice command not found. Ensure 'libreoffice-writer' is in packages.txt.")
+            raise RuntimeError(
+                "LibreOffice command not found. "
+                "Ensure 'libreoffice-writer' is in packages.txt and in the system's PATH."
+            )
         except subprocess.CalledProcessError as e:
+            # This happens if LibreOffice fails. The stderr often contains useful diagnostic info.
             raise RuntimeError(f"LibreOffice conversion failed.\nStderr: {e.stderr}")
         except subprocess.TimeoutExpired:
             raise RuntimeError("LibreOffice conversion timed out after 120 seconds.")
 
         if not os.path.exists(output_path):
-            raise FileNotFoundError("LibreOffice ran but failed to create the output PDF file.")
+            raise FileNotFoundError(
+                f"LibreOffice ran but failed to create the output PDF file at {output_path}. "
+                "This may be due to a problem with the input file or a missing font."
+            )
 
         return output_path
 
