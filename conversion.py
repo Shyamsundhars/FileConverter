@@ -27,8 +27,15 @@ def _convert_with_temp_file(uploaded_file, conversion_logic):
 def pdf_to_docx(uploaded_file, **kwargs):
     def logic(input_path, temp_dir):
         output_path = os.path.join(temp_dir, "converted.docx")
-        with Converter(input_path) as cv:
+        # The version of pdf2docx used in the environment does not support
+        # the context manager protocol (the 'with' statement).
+        # We must manually create the converter, use it, and then close it
+        # in a `finally` block to ensure it always runs.
+        cv = Converter(input_path)
+        try:
             cv.convert(output_path)
+        finally:
+            cv.close()
         return output_path
 
     return _convert_with_temp_file(uploaded_file, logic)
