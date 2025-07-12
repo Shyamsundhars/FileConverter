@@ -59,6 +59,7 @@ def docx_to_pdf(uploaded_file, **kwargs):
         # and custom fonts, which is key to solving the symbol issue.
         extra_args = [
             '--pdf-engine=xelatex',
+            '-V', 'geometry:margin=1in',  # Set 1-inch margins on all sides
         ]
 
         # By setting the working directory to temp_dir, pandoc will correctly
@@ -80,13 +81,21 @@ def docx_to_pdf(uploaded_file, **kwargs):
         except RuntimeError as e:
             # pypandoc raises RuntimeError on pandoc errors
             error_message = str(e)
-            if (
-                "Error producing PDF" in error_message
-                or "xelatex not found" in error_message
-            ):
+            if "Error producing PDF" in error_message:
+                err_hint = "This can happen with complex formatting or missing LaTeX packages."
+                if "longtable" in error_message:
+                    err_hint = (
+                        "This often happens with complex tables. "
+                        "Ensuring 'texlive-latex-extra' is in packages.txt can help."
+                    )
                 raise RuntimeError(
-                    "Pandoc failed to create PDF. This can happen with complex formatting "
-                    "or if the 'texlive-xetex' package is missing. "
+                    f"Pandoc failed to create PDF. {err_hint} "
+                    f"Original error: {error_message}"
+                )
+            if "xelatex not found" in error_message:
+                raise RuntimeError(
+                    "The 'xelatex' PDF engine was not found. "
+                    "Ensure 'texlive-xetex' is in packages.txt. "
                     f"Original error: {error_message}"
                 )
             raise e

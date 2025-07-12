@@ -4,3 +4,4 @@ texlive-fonts-recommended
 texlive-fonts-extra
 lmodern
 texlive-xetex
+texlive-latex-extra
