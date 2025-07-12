@@ -59,9 +59,9 @@ def docx_to_pdf(uploaded_file, **kwargs):
         # and custom fonts, which is key to solving the symbol issue.
         extra_args = [
             '--pdf-engine=xelatex',
-            '-V', 'geometry:margin=1in',      # Set 1-inch margins on all sides
-            '-V', 'mainfont="Noto Sans"',     # Use a font with broad Unicode support
-            '-V', 'monofont="Noto Sans Mono"',# Use a mono font for code blocks etc.
+            '-V', 'geometry:margin=1in',       # Set 1-inch margins on all sides
+            '-V', 'mainfont:Noto Sans',      # Use a font with broad Unicode support
+            '-V', 'monofont:Noto Sans Mono', # Use a mono font for code blocks etc.
         ]
 
         # By setting the working directory to temp_dir, pandoc will correctly
@@ -93,10 +93,15 @@ def docx_to_pdf(uploaded_file, **kwargs):
                         "This often happens with complex tables. "
                         "Ensuring 'texlive-latex-extra' is in packages.txt can help."
                     )
-                if "Missing character" in error_message:
+                elif "Missing character" in error_message:
                     err_hint = (
                         "The font is missing characters from your document. "
                         "Ensure 'fonts-noto-core' is in packages.txt and set as the 'mainfont'."
+                    )
+                elif "kpathsea: Running mktextfm" in error_message:
+                    err_hint = (
+                        "The TeX engine failed to find or load the specified font. "
+                        "This can be a font name or quoting issue."
                     )
                 raise RuntimeError(
                     f"Pandoc failed to create PDF. {err_hint} "
