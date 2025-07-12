@@ -59,7 +59,9 @@ def docx_to_pdf(uploaded_file, **kwargs):
         # and custom fonts, which is key to solving the symbol issue.
         extra_args = [
             '--pdf-engine=xelatex',
-            '-V', 'geometry:margin=1in',  # Set 1-inch margins on all sides
+            '-V', 'geometry:margin=1in',      # Set 1-inch margins on all sides
+            '-V', 'mainfont="Noto Sans"',     # Use a font with broad Unicode support
+            '-V', 'monofont="Noto Sans Mono"',# Use a mono font for code blocks etc.
         ]
 
         # By setting the working directory to temp_dir, pandoc will correctly
@@ -82,11 +84,19 @@ def docx_to_pdf(uploaded_file, **kwargs):
             # pypandoc raises RuntimeError on pandoc errors
             error_message = str(e)
             if "Error producing PDF" in error_message:
-                err_hint = "This can happen with complex formatting or missing LaTeX packages."
+                err_hint = (
+                    "This can happen with complex formatting, missing LaTeX packages, "
+                    "or fonts that don't support all characters in the document."
+                )
                 if "longtable" in error_message:
                     err_hint = (
                         "This often happens with complex tables. "
                         "Ensuring 'texlive-latex-extra' is in packages.txt can help."
+                    )
+                if "Missing character" in error_message:
+                    err_hint = (
+                        "The font is missing characters from your document. "
+                        "Ensure 'fonts-noto-core' is in packages.txt and set as the 'mainfont'."
                     )
                 raise RuntimeError(
                     f"Pandoc failed to create PDF. {err_hint} "

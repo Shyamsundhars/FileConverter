@@ -5,3 +5,5 @@ texlive-fonts-extra
 lmodern
 texlive-xetex
 texlive-latex-extra
+fonts-noto-core
+fonts-noto-mono
