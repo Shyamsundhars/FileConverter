@@ -1,8 +1,6 @@
 import os
 import io
-import subprocess
 import tempfile
-from pdf2docx import Converter
 from PIL import Image
 import pypandoc
 # from pydub import AudioSegment
@@ -25,15 +23,6 @@ def _convert_with_temp_file(uploaded_file, conversion_logic):
     output_filename = os.path.basename(output_path)
     return output_data, output_filename
 
-def pdf_to_docx(uploaded_file, **kwargs):
-    def logic(input_path, temp_dir):
-        output_path = os.path.join(temp_dir, "converted.docx")
-        with Converter(input_path) as cv:
-            cv.convert(output_path)
-        return output_path
-
-    return _convert_with_temp_file(uploaded_file, logic)
-
 
 def image_convert(uploaded_file, output_format, **kwargs):
     with Image.open(uploaded_file) as img:
@@ -51,14 +40,14 @@ def image_convert(uploaded_file, output_format, **kwargs):
 
 
 def docx_to_pdf(uploaded_file, **kwargs):
-    """Converts a DOCX file to PDF using pandoc with the xelatex engine."""
+    """Converts a DOCX file to PDF using pandoc with the lualatex engine."""
     def logic(input_path, temp_dir):
         output_path = os.path.join(temp_dir, "converted.pdf")
 
-        # Using --pdf-engine=xelatex provides much better support for Unicode
-        # and custom fonts, which is key to solving the symbol issue.
+        # Using --pdf-engine=lualatex is a modern and robust alternative to xelatex
+        # that often has better system font compatibility.
         extra_args = [
-            '--pdf-engine=xelatex',
+            '--pdf-engine=lualatex',
             '-V', 'geometry:margin=1in',      # Set 1-inch margins
             # Use a single, robust font for all text types to ensure
             # maximum character compatibility and prevent font lookup errors.
@@ -80,8 +69,8 @@ def docx_to_pdf(uploaded_file, **kwargs):
             )
         except OSError as e:
             raise RuntimeError(
-                "Pandoc/xelatex conversion failed. Ensure 'pandoc' and 'texlive-*' "
-                "packages are in packages.txt, especially 'texlive-xetex'."
+                "Pandoc/lualatex conversion failed. Ensure 'pandoc' and 'texlive-*' "
+                "packages are in packages.txt, especially 'texlive-luatex'."
             ) from e
         except RuntimeError as e:
             # pypandoc raises RuntimeError on pandoc errors
@@ -110,10 +99,10 @@ def docx_to_pdf(uploaded_file, **kwargs):
                     f"Pandoc failed to create PDF. {err_hint} "
                     f"Original error: {error_message}"
                 )
-            if "xelatex not found" in error_message:
+            if "lualatex not found" in error_message:
                 raise RuntimeError(
-                    "The 'xelatex' PDF engine was not found. "
-                    "Ensure 'texlive-xetex' is in packages.txt. "
+                    "The 'lualatex' PDF engine was not found. "
+                    "Ensure 'texlive-luatex' is in packages.txt. "
                     f"Original error: {error_message}"
                 )
             raise e
