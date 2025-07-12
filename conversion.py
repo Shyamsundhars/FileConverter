@@ -4,7 +4,6 @@ import subprocess
 import tempfile
 from pdf2docx import Converter
 from PIL import Image
-import pypandoc
 # from pydub import AudioSegment
 
 def _convert_with_temp_file(uploaded_file, conversion_logic):
@@ -51,70 +50,70 @@ def image_convert(uploaded_file, output_format, **kwargs):
 
 
 def docx_to_pdf(uploaded_file, **kwargs):
-    """Converts a DOCX file to PDF using pandoc with the lualatex engine."""
+    """
+    Converts a DOCX file to PDF using a two-step process for high fidelity:
+    1. Sanitize the DOCX with Pandoc to remove complex/problematic elements.
+    2. Convert the sanitized DOCX to PDF with LibreOffice to preserve layout.
+    """
     def logic(input_path, temp_dir):
-        output_path = os.path.join(temp_dir, "converted.pdf")
-
-        # Using --pdf-engine=lualatex is a modern and robust alternative to xelatex
-        # that often has better system font compatibility.
-        extra_args = [
-            '--pdf-engine=lualatex',
-            '-V', 'geometry:margin=1in', # Set 1-inch margins
-            # By NOT specifying a 'mainfont', we allow lualatex to use fontconfig
-            # to find the best system-installed font to match the one in the DOCX.
-            # This is crucial for preserving formatting like boldness and alignment.
-        ]
-
-        # By setting the working directory to temp_dir, pandoc will correctly
-        # find any media (like images) that it extracts from the .docx file,
-        # as it places them in a 'media' subdirectory within the CWD.
+        # --- Step 1: Sanitize the DOCX with Pandoc ---
+        sanitized_docx_path = os.path.join(temp_dir, "sanitized.docx")
         try:
-            pypandoc.convert_file(
-                source_file=input_path,
-                to='pdf',
-                outputfile=output_path,
-                extra_args=extra_args,
-                cworkdir=temp_dir
+            # Converting docx to docx with pandoc cleans up a lot of
+            # underlying XML, resolving issues with complex or corrupted files.
+            # This can fix artifacts and layout issues in the final PDF.
+            subprocess.run(
+                [
+                    'pandoc',
+                    input_path,
+                    '-o', sanitized_docx_path,
+                    '--wrap=none' # Helps preserve line breaks
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=60
             )
-        except OSError as e:
+        except FileNotFoundError:
+             raise RuntimeError(
+                "Pandoc command not found. Ensure 'pandoc' is in packages.txt."
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            error_details = e.stderr if hasattr(e, 'stderr') else str(e)
             raise RuntimeError(
-                "Pandoc/lualatex conversion failed. Ensure 'pandoc' and 'texlive-*' "
-                "packages are in packages.txt, especially 'texlive-luatex'."
-            ) from e
-        except RuntimeError as e:
-            # pypandoc raises RuntimeError on pandoc errors
-            error_message = str(e)
-            if "Error producing PDF" in error_message:
-                err_hint = (
-                    "This can happen with complex formatting, missing LaTeX packages, "
-                    "or fonts that don't support all characters in the document."
-                )
-                if "longtable" in error_message:
-                    err_hint = (
-                        "This often happens with complex tables. "
-                        "Ensuring 'texlive-latex-extra' is in packages.txt can help."
-                    )
-                elif "Missing character" in error_message:
-                    err_hint = (
-                        "The font is missing characters from your document. "
-                        "Ensure 'fonts-noto-core' is in packages.txt and set as the 'mainfont'."
-                    )
-                elif "kpathsea: Running mktextfm" in error_message:
-                    err_hint = (
-                        "The TeX engine failed to find or load the specified font. "
-                        "This can be a font name or quoting issue."
-                    )
-                raise RuntimeError(
-                    f"Pandoc failed to create PDF. {err_hint} "
-                    f"Original error: {error_message}"
-                )
-            if "lualatex not found" in error_message:
-                raise RuntimeError(
-                    "The 'lualatex' PDF engine was not found. "
-                    "Ensure 'texlive-lualatex' is in packages.txt. "
-                    f"Original error: {error_message}"
-                )
-            raise e
+                "Pandoc sanitization step failed. This can happen with highly complex or "
+                f"malformed DOCX files. Error: {error_details}"
+            )
+
+        # --- Step 2: Convert the sanitized DOCX to PDF with LibreOffice ---
+        # LibreOffice creates a PDF with the same name as the input file.
+        pdf_filename = "sanitized.pdf"
+        output_path = os.path.join(temp_dir, pdf_filename)
+
+        try:
+            # Use LibreOffice for a high-fidelity conversion that
+            # preserves complex layouts like multi-column pages.
+            subprocess.run(
+                [
+                    'libreoffice',
+                    '--headless',
+                    '--convert-to', 'pdf',
+                    '--outdir', temp_dir,
+                    sanitized_docx_path # Use the sanitized file
+                ],
+                check=True, capture_output=True, text=True,
+                timeout=120  # Add a timeout for large files
+            )
+        except FileNotFoundError:
+            raise RuntimeError("LibreOffice command not found. Ensure 'libreoffice-writer' is in packages.txt.")
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"LibreOffice conversion failed.\nStderr: {e.stderr}")
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("LibreOffice conversion timed out after 120 seconds.")
+
+        if not os.path.exists(output_path):
+            raise FileNotFoundError("LibreOffice ran but failed to create the output PDF file.")
+
         return output_path
 
     return _convert_with_temp_file(uploaded_file, logic)

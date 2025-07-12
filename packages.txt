@@ -1,11 +1,10 @@
 pandoc
-texlive-luatex
-texlive-latex-base
-texlive-latex-extra
-texlive-fonts-recommended
+libreoffice-writer
 fontconfig
 fonts-liberation2
 fonts-crosextra-carlito
-fonts-noto-unhinted
+fonts-noto-core
+fonts-noto-mono
+fonts-noto-cjk
 fonts-deva
 fonts-taml
