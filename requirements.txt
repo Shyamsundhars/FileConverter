@@ -4,5 +4,4 @@ Pillow
 PyPDF2
 PyMuPDF
 streamlit-sortables
-pydub
-pyaudioop
+pydub @ git+https://github.com/jiaaro/pydub.git
