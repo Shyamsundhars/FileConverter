@@ -74,15 +74,40 @@ uploaded_content = st.file_uploader(
     accept_multiple_files=config.get("multiple_files", False)
 )
 
+files_to_process = uploaded_content
+
+# Add UI for reordering files if the selected conversion is "Merge PDFs"
+if conversion_choice == "Merge PDFs" and uploaded_content:
+    if len(uploaded_content) > 1:
+        st.write("### Set Merge Order")
+        st.info("Select files from the dropdown in the order you want them to be merged.")
+
+        # Create a dictionary to map names back to file objects
+        file_map = {f.name: f for f in uploaded_content}
+
+        # Get a list of file names
+        file_names = list(file_map.keys())
+
+        # Use multiselect for reordering
+        ordered_file_names = st.multiselect(
+            "Merge Order",
+            options=file_names,
+            default=file_names,
+            help="Click on the files in the desired merge order. You can remove and re-add them to change their sequence."
+        )
+
+        # Re-create the list of file objects in the desired order
+        files_to_process = [file_map[name] for name in ordered_file_names]
+
 
 extra_args = {}
 if extra_ui_func := config.get("extra_ui"):
     extra_args[config["extra_arg_name"]] = extra_ui_func()
 
-if uploaded_content and st.button(f"Convert to {config['output_name']}"):
+if files_to_process and st.button(f"Convert to {config['output_name']}"):
     with st.spinner("Converting..."):
         try:
-            output, filename = config["conversion_func"](uploaded_content, **extra_args)
+            output, filename = config["conversion_func"](files_to_process, **extra_args)
             if not output:
                 st.error("Conversion failed and produced an empty file.")
                 if tip := config.get("failure_tip"):

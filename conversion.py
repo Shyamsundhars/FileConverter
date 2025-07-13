@@ -53,13 +53,6 @@ def image_convert(uploaded_file, output_format, **kwargs):
 
 
 def merge_pdfs(uploaded_files, **kwargs):
-    """
-    Merges multiple PDF files into a single PDF document.
-
-    Args:
-        uploaded_files (list): A list of file-like objects (from Streamlit's
-                               file_uploader) to be merged.
-    """
     if not uploaded_files or len(uploaded_files) < 2:
         raise ValueError("Please upload at least two PDF files to merge.")
 
@@ -75,12 +68,6 @@ def merge_pdfs(uploaded_files, **kwargs):
     return output_buffer.getvalue(), "merged.pdf"
 
 def image_to_pdf(uploaded_file, **kwargs):
-    """
-    Converts a single or multi-frame image file to a PDF document.
-
-    This function handles various image formats like JPG, PNG, GIF, and TIFF,
-    creating a multi-page PDF for animated or multi-frame images.
-    """
     img = Image.open(uploaded_file)
     rgb_frames = []
     for frame in ImageSequence.Iterator(img):
