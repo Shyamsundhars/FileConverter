@@ -81,7 +81,7 @@ files_to_process = uploaded_content
 if conversion_choice == "Merge PDFs" and uploaded_content:
     if len(uploaded_content) > 1:
         st.write("### Set Merge Order")
-        st.info("Drag and drop the rows to change the merge order.")
+        st.info("Drag and drop rows using the handle on the far left to change the merge order.")
 
         # Create a dictionary to map names back to file objects
         file_map = {f.name: f for f in uploaded_content}
@@ -90,15 +90,12 @@ if conversion_choice == "Merge PDFs" and uploaded_content:
         df = pd.DataFrame({"File Name": list(file_map.keys())})
 
         # Display the data editor for reordering
+        # By showing the index (hide_index=False), we provide a drag handle
+        # for reordering, which works even when the data column is disabled.
         reordered_df = st.data_editor(
             df,
-            column_config={
-                "File Name": st.column_config.TextColumn(
-                    "File Name",
-                    disabled=True,
-                )
-            },
-            hide_index=True,
+            disabled=["File Name"],
+            hide_index=False,
             key="pdf_order_editor",
         )
 
