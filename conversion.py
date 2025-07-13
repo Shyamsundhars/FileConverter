@@ -3,7 +3,7 @@ import io
 import subprocess
 import tempfile
 from pdf2docx import Converter
-from PIL import Image
+from PIL import Image, ImageSequence
 # from pydub import AudioSegment
 
 def _convert_with_temp_file(uploaded_file, conversion_logic):
@@ -54,6 +54,43 @@ def image_convert(uploaded_file, output_format, **kwargs):
         image_data = output_buffer.getvalue()
 
     return image_data, f"converted.{output_format.lower()}"
+
+
+def image_to_pdf(uploaded_file, **kwargs):
+    """
+    Converts a single or multi-frame image file to a PDF document.
+
+    This function handles various image formats like JPG, PNG, GIF, and TIFF,
+    creating a multi-page PDF for animated or multi-frame images.
+    """
+    img = Image.open(uploaded_file)
+
+    # Convert all frames to RGB and store them in a list.
+    # This handles single-frame images as well as multi-frame ones (GIFs, TIFFs).
+    # Conversion to 'RGB' is a safe choice for PDF compatibility, as it
+    # correctly handles transparency (RGBA) and palette-based (P) images.
+    rgb_frames = []
+    for frame in ImageSequence.Iterator(img):
+        rgb_frames.append(frame.convert('RGB'))
+
+    if not rgb_frames:
+        raise ValueError("The provided image file contains no frames to convert.")
+
+    # Use a BytesIO buffer to save the PDF in memory.
+    output_buffer = io.BytesIO()
+
+    # The first image is used to create the PDF, and subsequent images are appended.
+    rgb_frames[0].save(
+        output_buffer,
+        format="PDF",
+        resolution=100.0,
+        save_all=True,
+        append_images=rgb_frames[1:]
+    )
+
+    # Generate a descriptive output filename.
+    base_filename = os.path.splitext(uploaded_file.name)[0]
+    return output_buffer.getvalue(), f"{base_filename}.pdf"
 
 
 def docx_to_pdf(uploaded_file, **kwargs):

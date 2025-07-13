@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from conversion import pdf_to_docx, image_convert, docx_to_pdf #, audio_convert
+from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf #, audio_convert
 
 os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/runtime-appuser")
 
@@ -22,6 +22,13 @@ CONVERSION_CONFIG = {
         "extra_ui": lambda: st.selectbox("Output format", ["png", "jpg", "bmp", "tiff", "gif"]),
         "extra_arg_name": "output_format",
         "output_name": "Image",
+    },
+    "Image to PDF": {
+        "uploader_label": "Upload Image",
+        "file_types": ["jpg", "jpeg", "png", "bmp", "tiff", "gif"],
+        "conversion_func": image_to_pdf,
+        "output_name": "PDF",
+        "failure_tip": "Conversion can fail for corrupted or unsupported image formats.",
     },
     "DOCX to PDF": {
         "uploader_label": "Upload DOCX",
