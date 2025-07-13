@@ -4,6 +4,8 @@ import subprocess
 import tempfile
 from pdf2docx import Converter
 from PIL import Image, ImageSequence
+import fitz  # PyMuPDF
+import zipfile
 # from pydub import AudioSegment
 
 def _convert_with_temp_file(uploaded_file, conversion_logic):
@@ -91,6 +93,34 @@ def image_to_pdf(uploaded_file, **kwargs):
     # Generate a descriptive output filename.
     base_filename = os.path.splitext(uploaded_file.name)[0]
     return output_buffer.getvalue(), f"{base_filename}.pdf"
+
+
+def pdf_to_image(uploaded_file, image_format, **kwargs):
+    """
+    Converts each page of a PDF file into an image and returns them as a zip archive.
+    """
+    # PyMuPDF can open a file from a byte stream
+    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+
+    # Create a zip file in memory
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for i, page in enumerate(doc):
+            # Render page to a pixmap.
+            pix = page.get_pixmap()
+
+            # Pillow-compatible formats: "png", "jpg", "jpeg", "pnm", "pgm", "ppm", "pbm"
+            # We will offer png and jpg in the UI.
+            img_bytes = pix.tobytes(output=image_format.lower())
+
+            image_filename = f"page_{i + 1}.{image_format.lower()}"
+            zip_file.writestr(image_filename, img_bytes)
+
+    doc.close()
+
+    # Generate a descriptive output filename.
+    base_filename = os.path.splitext(uploaded_file.name)[0]
+    return zip_buffer.getvalue(), f"{base_filename}_images.zip"
 
 
 def docx_to_pdf(uploaded_file, **kwargs):

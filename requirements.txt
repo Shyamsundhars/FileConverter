@@ -1,4 +1,5 @@
 streamlit
 pdf2docx
 Pillow
+PyPDF2
 # pydub
