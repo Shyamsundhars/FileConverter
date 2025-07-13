@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 from streamlit_sortables import sort_items
-from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf, pdf_to_image, merge_pdfs, split_pdf #, audio_convert
+from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf, pdf_to_image, merge_pdfs, split_pdf, audio_convert
 
 os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/runtime-appuser")
 
@@ -67,14 +67,16 @@ CONVERSION_CONFIG = {
         "output_name": "PDF",
         "failure_tip": "Conversion can fail for documents with very complex formatting or unsupported special characters/fonts.",
     },
-    #Future Audio Component:
-    # "Audio to Audio": {
-    #     "uploader_label": "Upload Audio",
-    #     "file_types": ["mp3", "wav", "ogg", "flac"],
-    #     "conversion_func": audio_convert,
-    #     "extra_ui": lambda: st.selectbox("Output format", ["mp3", "wav", "ogg", "flac"]),
-    #     "extra_arg_name": "output_format",
-    # },
+    "Audio to Audio": {
+        "uploader_label": "Upload Audio",
+        "file_types": ["mp3", "wav", "ogg", "flac", "m4a", "wma"],
+        "conversion_func": audio_convert,
+        "extra_ui": lambda: st.selectbox("Output format", ["mp3", "wav", "ogg", "flac"]),
+        "extra_arg_name": "output_format",
+        "output_name": "Audio",
+        "failure_tip": "Conversion can fail if the 'ffmpeg' backend is not installed or if the file is corrupted. "
+                       "Ensure 'ffmpeg' is in your packages.txt file for cloud deployments.",
+    },
 }
 
 conversion_choice = st.selectbox("Choose conversion", list(CONVERSION_CONFIG.keys()))

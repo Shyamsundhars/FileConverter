@@ -7,7 +7,8 @@ from pdf2docx import Converter
 from PIL import Image, ImageSequence
 from PyPDF2 import PdfMerger
 import zipfile
-# from pydub import AudioSegment
+from pydub import AudioSegment
+from pydub.exceptions import CouldntDecodeError
 import fitz  # PyMuPDF
 
 def _convert_with_temp_file(uploaded_file, conversion_logic):
@@ -205,13 +206,24 @@ def docx_to_pdf(uploaded_file, **kwargs):
     return _convert_with_temp_file(uploaded_file, logic)
 
 
-# def audio_convert(uploaded_file, output_format, **kwargs):
-#     """Converts an audio file to a different format in-memory."""
-#     # pydub can read directly from a file-like object
-#     audio = AudioSegment.from_file(uploaded_file)
-#
-#     output_buffer = io.BytesIO()
-#     audio.export(output_buffer, format=output_format)
-#     audio_data = output_buffer.getvalue()
-#
-#     return audio_data, f"converted.{output_format.lower()}"
+def audio_convert(uploaded_file, output_format, **kwargs):
+    """Converts an audio file to a different format in-memory."""
+    try:
+        # pydub can read directly from a file-like object
+        audio = AudioSegment.from_file(uploaded_file)
+
+        output_buffer = io.BytesIO()
+        audio.export(output_buffer, format=output_format)
+        audio_data = output_buffer.getvalue()
+
+        return audio_data, f"converted.{output_format.lower()}"
+    except CouldntDecodeError:
+        # This error often means ffmpeg is not installed or not in the PATH.
+        raise RuntimeError(
+            "Failed to decode audio file. This may be because the required "
+            "audio codec is missing or the file is corrupted. "
+            "Ensure 'ffmpeg' is installed and available in your system's PATH. "
+            "If deploying on Streamlit Cloud, add 'ffmpeg' to your packages.txt file."
+        )
+    except Exception as e:
+        raise RuntimeError(f"An unexpected error occurred during audio conversion: {e}")

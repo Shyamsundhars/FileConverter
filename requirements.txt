@@ -4,4 +4,4 @@ Pillow
 PyPDF2
 PyMuPDF
 streamlit-sortables
-# pydub
+pydub

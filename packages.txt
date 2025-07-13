@@ -8,3 +8,4 @@ fonts-noto-cjk
 fonts-deva
 fonts-taml
 fonts-wine
+ffmpeg
