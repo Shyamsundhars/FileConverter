@@ -81,7 +81,10 @@ files_to_process = uploaded_content
 if conversion_choice == "Merge PDFs" and uploaded_content:
     if len(uploaded_content) > 1:
         st.write("### Set Merge Order")
-        st.info("Drag and drop rows using the handle on the far left to change the merge order.")
+        st.info(
+            "Drag and drop rows using the handle on the far left to change the merge order. "
+            "Adding or deleting rows in this table will be ignored."
+        )
 
         # Create a dictionary to map names back to file objects
         file_map = {f.name: f for f in uploaded_content}
@@ -94,13 +97,19 @@ if conversion_choice == "Merge PDFs" and uploaded_content:
         # for reordering, which works even when the data column is disabled.
         reordered_df = st.data_editor(
             df,
+            num_rows="dynamic",
             disabled=["File Name"],
             hide_index=False,
             key="pdf_order_editor",
         )
 
         # Re-create the list of file objects in the desired order
-        files_to_process = [file_map[name] for name in reordered_df["File Name"].tolist()]
+        # We filter the result to ignore any rows the user might have added or
+        # deleted, effectively only processing the reordered original files.
+        ordered_names = [
+            name for name in reordered_df["File Name"].tolist() if name in file_map
+        ]
+        files_to_process = [file_map[name] for name in ordered_names]
 
 
 extra_args = {}
