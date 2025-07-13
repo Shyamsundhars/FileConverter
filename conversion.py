@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 from pdf2docx import Converter
 from PIL import Image, ImageSequence
-import fitz  # PyMuPDF
+from PyPDF2 import PdfMerger
 import zipfile
 # from pydub import AudioSegment
 
@@ -29,10 +29,6 @@ def _convert_with_temp_file(uploaded_file, conversion_logic):
 def pdf_to_docx(uploaded_file, **kwargs):
     def logic(input_path, temp_dir):
         output_path = os.path.join(temp_dir, "converted.docx")
-        # The version of pdf2docx used in the environment does not support
-        # the context manager protocol (the 'with' statement).
-        # We must manually create the converter, use it, and then close it
-        # in a `finally` block to ensure it always runs.
         cv = Converter(input_path)
         try:
             cv.convert(output_path)
@@ -47,8 +43,6 @@ def image_convert(uploaded_file, output_format, **kwargs):
     with Image.open(uploaded_file) as img:
         if output_format.lower() in ['jpg', 'jpeg'] and img.mode == 'RGBA':
             img = img.convert('RGB')
-
-        # Pillow expects 'JPEG' for .jpg files, so we normalize the format name.
         save_format = 'JPEG' if output_format.lower() == 'jpg' else output_format.upper()
 
         output_buffer = io.BytesIO()
@@ -58,6 +52,28 @@ def image_convert(uploaded_file, output_format, **kwargs):
     return image_data, f"converted.{output_format.lower()}"
 
 
+def merge_pdfs(uploaded_files, **kwargs):
+    """
+    Merges multiple PDF files into a single PDF document.
+
+    Args:
+        uploaded_files (list): A list of file-like objects (from Streamlit's
+                               file_uploader) to be merged.
+    """
+    if not uploaded_files or len(uploaded_files) < 2:
+        raise ValueError("Please upload at least two PDF files to merge.")
+
+    merger = PdfMerger()
+
+    for pdf_file in uploaded_files:
+        merger.append(pdf_file)
+
+    output_buffer = io.BytesIO()
+    merger.write(output_buffer)
+    merger.close()
+
+    return output_buffer.getvalue(), "merged.pdf"
+
 def image_to_pdf(uploaded_file, **kwargs):
     """
     Converts a single or multi-frame image file to a PDF document.
@@ -66,22 +82,13 @@ def image_to_pdf(uploaded_file, **kwargs):
     creating a multi-page PDF for animated or multi-frame images.
     """
     img = Image.open(uploaded_file)
-
-    # Convert all frames to RGB and store them in a list.
-    # This handles single-frame images as well as multi-frame ones (GIFs, TIFFs).
-    # Conversion to 'RGB' is a safe choice for PDF compatibility, as it
-    # correctly handles transparency (RGBA) and palette-based (P) images.
     rgb_frames = []
     for frame in ImageSequence.Iterator(img):
         rgb_frames.append(frame.convert('RGB'))
 
     if not rgb_frames:
         raise ValueError("The provided image file contains no frames to convert.")
-
-    # Use a BytesIO buffer to save the PDF in memory.
     output_buffer = io.BytesIO()
-
-    # The first image is used to create the PDF, and subsequent images are appended.
     rgb_frames[0].save(
         output_buffer,
         format="PDF",
@@ -89,62 +96,38 @@ def image_to_pdf(uploaded_file, **kwargs):
         save_all=True,
         append_images=rgb_frames[1:]
     )
-
-    # Generate a descriptive output filename.
     base_filename = os.path.splitext(uploaded_file.name)[0]
     return output_buffer.getvalue(), f"{base_filename}.pdf"
 
 
 def pdf_to_image(uploaded_file, image_format, **kwargs):
-    """
-    Converts each page of a PDF file into an image and returns them as a zip archive.
-    """
-    # PyMuPDF can open a file from a byte stream
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
 
     # Create a zip file in memory
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for i, page in enumerate(doc):
-            # Render page to a pixmap.
             pix = page.get_pixmap()
-
-            # Pillow-compatible formats: "png", "jpg", "jpeg", "pnm", "pgm", "ppm", "pbm"
-            # We will offer png and jpg in the UI.
             img_bytes = pix.tobytes(output=image_format.lower())
 
             image_filename = f"page_{i + 1}.{image_format.lower()}"
             zip_file.writestr(image_filename, img_bytes)
 
     doc.close()
-
-    # Generate a descriptive output filename.
     base_filename = os.path.splitext(uploaded_file.name)[0]
     return zip_buffer.getvalue(), f"{base_filename}_images.zip"
 
 
 def docx_to_pdf(uploaded_file, **kwargs):
-    """
-    Converts a DOCX file to PDF using LibreOffice for high-fidelity layout
-    and formatting preservation.
-    """
     def logic(input_path, temp_dir):
-        # LibreOffice will create a PDF with the same basename as the input file
-        # in the specified output directory.
-        # e.g., my_document.docx -> my_document.pdf
         base_filename = os.path.basename(input_path)
         pdf_filename = os.path.splitext(base_filename)[0] + '.pdf'
         output_path = os.path.join(temp_dir, pdf_filename)
 
         try:
-            # Use LibreOffice (soffice) to perform a high-fidelity conversion that
-            # preserves complex layouts like multi-column pages. This is more
-            # reliable than pandoc for visual fidelity. The environment should
-            # have `ttf-mscorefonts-installer` in packages.txt to provide
-            # common Microsoft fonts, which prevents rendering artifacts.
             subprocess.run(
                 [
-                    'soffice',  # Use 'soffice' for better stability in some environments
+                    'soffice', 
                     '--headless',
                     '--convert-to', 'pdf:writer_pdf_Export',
                     '--outdir', temp_dir,
@@ -153,7 +136,7 @@ def docx_to_pdf(uploaded_file, **kwargs):
                 check=True,
                 capture_output=True,
                 text=True,
-                timeout=120  # Add a timeout for large files
+                timeout=120 
             )
         except FileNotFoundError:
             raise RuntimeError(
@@ -161,7 +144,6 @@ def docx_to_pdf(uploaded_file, **kwargs):
                 "Ensure 'libreoffice-writer' is in packages.txt and in the system's PATH."
             )
         except subprocess.CalledProcessError as e:
-            # This happens if LibreOffice fails. The stderr often contains useful diagnostic info.
             raise RuntimeError(f"LibreOffice conversion failed.\nStderr: {e.stderr}")
         except subprocess.TimeoutExpired:
             raise RuntimeError("LibreOffice conversion timed out after 120 seconds.")

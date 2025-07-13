@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf, pdf_to_image #, audio_convert
+from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf, pdf_to_image, merge_pdfs #, audio_convert
 
 os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/runtime-appuser")
 
@@ -29,6 +29,14 @@ CONVERSION_CONFIG = {
         "conversion_func": image_to_pdf,
         "output_name": "PDF",
         "failure_tip": "Conversion can fail for corrupted or unsupported image formats.",
+    },
+    "Merge PDFs": {
+        "uploader_label": "Upload PDFs to Merge",
+        "file_types": ["pdf"],
+        "conversion_func": merge_pdfs,
+        "output_name": "Merged PDF",
+        "multiple_files": True,
+        "failure_tip": "Merging can fail if one of the PDFs is corrupted or password-protected.",
     },
     "PDF to Image": {
         "uploader_label": "Upload PDF to Convert to Images",
@@ -60,20 +68,23 @@ conversion_choice = st.selectbox("Choose conversion", list(CONVERSION_CONFIG.key
 
 config = CONVERSION_CONFIG[conversion_choice]
 
-uploaded_file = st.file_uploader(label=config["uploader_label"], type=config["file_types"])
+uploaded_content = st.file_uploader(
+    label=config["uploader_label"],
+    type=config["file_types"],
+    accept_multiple_files=config.get("multiple_files", False)
+)
 
-# Handle optional UI elements for conversions like Image to Image
+
 extra_args = {}
 if extra_ui_func := config.get("extra_ui"):
     extra_args[config["extra_arg_name"]] = extra_ui_func()
 
-if uploaded_file and st.button(f"Convert to {config['output_name']}"):
+if uploaded_content and st.button(f"Convert to {config['output_name']}"):
     with st.spinner("Converting..."):
         try:
-            output, filename = config["conversion_func"](uploaded_file, **extra_args)
+            output, filename = config["conversion_func"](uploaded_content, **extra_args)
             if not output:
                 st.error("Conversion failed and produced an empty file.")
-                # Provide a context-specific tip from the config
                 if tip := config.get("failure_tip"):
                     st.info(tip)
             else:
