@@ -2,5 +2,5 @@ streamlit
 pdf2docx
 Pillow
 PyPDF2
-pandas
+streamlit-sortables
 # pydub
