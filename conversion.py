@@ -133,7 +133,10 @@ def split_pdf(uploaded_file, page_ranges: str, **kwargs):
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for i, page_list in enumerate(parsed_page_groups):
             new_doc = fitz.open()
-            new_doc.insert_pdf(doc, from_page_list=page_list)
+            # The 'from_page_list' argument is for newer PyMuPDF versions.
+            # To maintain compatibility, we iterate and insert pages one by one.
+            for page_num in page_list:
+                new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
             pdf_bytes = new_doc.tobytes(garbage=4, deflate=True)
             part_name = f"split_part_{i+1}_pages_{page_list[0]+1}-{page_list[-1]+1}.pdf"
             zip_file.writestr(part_name, pdf_bytes)
