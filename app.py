@@ -1,5 +1,6 @@
 import os
 import streamlit as st
+import pandas as pd
 from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf, pdf_to_image, merge_pdfs #, audio_convert
 
 os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/runtime-appuser")
@@ -80,24 +81,29 @@ files_to_process = uploaded_content
 if conversion_choice == "Merge PDFs" and uploaded_content:
     if len(uploaded_content) > 1:
         st.write("### Set Merge Order")
-        st.info("Select files from the dropdown in the order you want them to be merged.")
+        st.info("Drag and drop the rows to change the merge order.")
 
         # Create a dictionary to map names back to file objects
         file_map = {f.name: f for f in uploaded_content}
 
-        # Get a list of file names
-        file_names = list(file_map.keys())
+        # Create a DataFrame for the data editor
+        df = pd.DataFrame({"File Name": list(file_map.keys())})
 
-        # Use multiselect for reordering
-        ordered_file_names = st.multiselect(
-            "Merge Order",
-            options=file_names,
-            default=file_names,
-            help="Click on the files in the desired merge order. You can remove and re-add them to change their sequence."
+        # Display the data editor for reordering
+        reordered_df = st.data_editor(
+            df,
+            column_config={
+                "File Name": st.column_config.TextColumn(
+                    "File Name",
+                    disabled=True,
+                )
+            },
+            hide_index=True,
+            key="pdf_order_editor",
         )
 
         # Re-create the list of file objects in the desired order
-        files_to_process = [file_map[name] for name in ordered_file_names]
+        files_to_process = [file_map[name] for name in reordered_df["File Name"].tolist()]
 
 
 extra_args = {}
