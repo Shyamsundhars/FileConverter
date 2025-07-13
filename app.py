@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 from streamlit_sortables import sort_items
-from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf, pdf_to_image, merge_pdfs #, audio_convert
+from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf, pdf_to_image, merge_pdfs, split_pdf #, audio_convert
 
 os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/runtime-appuser")
 
@@ -38,6 +38,18 @@ CONVERSION_CONFIG = {
         "output_name": "Merged PDF",
         "multiple_files": True,
         "failure_tip": "Merging can fail if one of the PDFs is corrupted or password-protected.",
+    },
+    "Split PDF": {
+        "uploader_label": "Upload PDF to Split",
+        "file_types": ["pdf"],
+        "conversion_func": split_pdf,
+        "extra_ui": lambda: st.text_input(
+            "Page ranges to split (e.g., 1-3, 4, 5-7)",
+            placeholder="1-3, 5, 7-9"
+        ),
+        "extra_arg_name": "page_ranges",
+        "output_name": "Split PDFs (zip)",
+        "failure_tip": "Splitting can fail if the page range format is incorrect or the PDF is corrupted/empty.",
     },
     "PDF to Image": {
         "uploader_label": "Upload PDF to Convert to Images",
