@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-import pandas as pd
+from streamlit_sortables import sort_items
 from conversion import pdf_to_docx, image_convert, docx_to_pdf, image_to_pdf, pdf_to_image, merge_pdfs #, audio_convert
 
 os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/runtime-appuser")
@@ -80,36 +80,21 @@ files_to_process = uploaded_content
 # Add UI for reordering files if the selected conversion is "Merge PDFs"
 if conversion_choice == "Merge PDFs" and uploaded_content:
     if len(uploaded_content) > 1:
-        st.write("### Set Merge Order")
-        st.info(
-            "Drag and drop rows using the handle on the far left to change the merge order. "
-            "Adding or deleting rows in this table will be ignored."
-        )
-
         # Create a dictionary to map names back to file objects
         file_map = {f.name: f for f in uploaded_content}
 
-        # Create a DataFrame for the data editor
-        df = pd.DataFrame({"File Name": list(file_map.keys())})
+        # Get a list of original filenames to pass to the sortable list
+        original_filenames = [f.name for f in uploaded_content]
 
-        # Display the data editor for reordering
-        # By showing the index (hide_index=False), we provide a drag handle
-        # for reordering, which works even when the data column is disabled.
-        reordered_df = st.data_editor(
-            df,
-            num_rows="dynamic",
-            disabled=["File Name"],
-            hide_index=False,
-            key="pdf_order_editor",
+        # Use the sort_items component to allow drag-and-drop reordering
+        sorted_filenames = sort_items(
+            original_filenames,
+            header="Set Merge Order",
+            direction="vertical"
         )
 
         # Re-create the list of file objects in the desired order
-        # We filter the result to ignore any rows the user might have added or
-        # deleted, effectively only processing the reordered original files.
-        ordered_names = [
-            name for name in reordered_df["File Name"].tolist() if name in file_map
-        ]
-        files_to_process = [file_map[name] for name in ordered_names]
+        files_to_process = [file_map[name] for name in sorted_filenames]
 
 
 extra_args = {}
